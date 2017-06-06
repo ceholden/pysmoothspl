@@ -1,0 +1,2 @@
+include versioneer.py
+include pysmoothspl/_version.py

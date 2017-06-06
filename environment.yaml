@@ -1,0 +1,6 @@
+name: pysmoothspl
+channels:
+    - conda-forge
+dependencies:
+    - numpy
+    - cython
