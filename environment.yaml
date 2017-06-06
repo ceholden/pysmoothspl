@@ -4,3 +4,8 @@ channels:
 dependencies:
     - numpy
     - cython
+    # Compatibilty
+    - pathlib  # [py2]
+    # Tests
+    - pytest
+    - pandas
