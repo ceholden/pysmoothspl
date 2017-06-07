@@ -88,6 +88,9 @@ build_kwds = {
 ext_modules = cythonize([
     Extension("pysmoothspl._sbart",
               sources=["pysmoothspl/_sbart.pyx"],
+              **build_kwds),
+    Extension("pysmoothspl._array_wrap",
+              sources=["pysmoothspl/_array_wrap.pyx"],
               **build_kwds)
 ])
 

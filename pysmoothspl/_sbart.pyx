@@ -7,10 +7,14 @@ from libc.stdlib cimport malloc, free
 import numpy as np
 cimport numpy as np
 
+import _array_wrap
+cimport _array_wrap
+
 logger = logging.getLogger(__name__)
 
 # Initialize NumPy
 np.import_array()
+
 
 cdef extern from "sbart.h":
     int sbart(
@@ -41,6 +45,8 @@ cdef extern from "sbart.h":
 
 
 cdef _nknots(n):
+    """ Calculate a "good" amount of knots
+    """
     if n < 500:
         return n
     a1 = np.log2(50)
@@ -98,6 +104,7 @@ cpdef _sbart(np.ndarray[np.double_t, ndim=1] xs,
         np.repeat(xs[n - 1], 3)
     ))
     nk += 2
+
     logger.debug('Calculated {nk} knots for {n} observations'.
                  format(nk=nk, n=n))
 
@@ -132,8 +139,8 @@ cpdef _sbart(np.ndarray[np.double_t, ndim=1] xs,
                     sg0, sg1, sg2, sg3,
                     abd, ld4)
         if ier != 0:
-            raise RuntimeError('An error occurred within `sbart`. Return code {0}'
-                               .format(ier))
+            raise RuntimeError('An error occurred within `sbart`. '
+                               'Return code {0}'.format(ier))
     finally:
         # Make sure we don't leak even if there's an exception
         logger.debug('Deallocating memory')
@@ -153,9 +160,8 @@ cpdef _sbart(np.ndarray[np.double_t, ndim=1] xs,
         free(p2ip)
 
     logger.debug('Converting membuffer into np.ndarray')
-    shape[0] = <np.npy_intp> n
-    cdef np.ndarray[np.double_t, ndim=1] szarr = np.PyArray_SimpleNewFromData(
-        1, shape, np.NPY_DOUBLE, sz)
-    np.PyArray_UpdateFlags(szarr, szarr.flags.num | np.NPY_OWNDATA)
+    szarr = _array_wrap.to_ndarray(n, np.NPY_DOUBLE, sz)
+
+    return szarr
 
     return szarr
