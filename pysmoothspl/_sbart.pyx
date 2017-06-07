@@ -42,6 +42,14 @@ cdef extern from "sbart.h":
         double *abd,
         int ld4
     )
+    double c_bvalue(
+        double *t,
+        double *bcoef,
+        int n,
+        int k,
+        double x,
+        int jderiv
+    )
 
 
 cdef _nknots(n):
@@ -80,9 +88,7 @@ cpdef _sbart(np.ndarray[np.double_t, ndim=1] xs,
     cdef int ldnk = 1
     cdef int isetup = 0
     cdef int ier, n, nk
-
-    # Holder for 1d shapes for NumPy object outputs
-    cdef np.npy_intp shape[1]
+    cdef double xs_range, xs_min
 
     # TODO: cross-validation type
     # TODO: ispar (if we want it estimated)
@@ -94,7 +100,9 @@ cpdef _sbart(np.ndarray[np.double_t, ndim=1] xs,
     ws = (ws * (ws > 0).sum()) / ws.sum()
 
     # 2. Scale xs to [0, 1]
-    xs = (xs - xs[0]) / (xs[-1] - xs[0])
+    xs_min = xs[0]
+    xs_range = (xs[-1] - xs[0])
+    xs = (xs - xs[0]) / xs_range
 
     # 3. Calculate knots
     nk = _nknots(n)
@@ -143,9 +151,7 @@ cpdef _sbart(np.ndarray[np.double_t, ndim=1] xs,
                                'Return code {0}'.format(ier))
     finally:
         # Make sure we don't leak even if there's an exception
-        logger.debug('Deallocating memory')
-        knots = None
-        free(coef)
+        logger.debug('Deallocating workspace memory')
         free(xwy)
         free(hs0)
         free(hs1)
@@ -160,8 +166,38 @@ cpdef _sbart(np.ndarray[np.double_t, ndim=1] xs,
         free(p2ip)
 
     logger.debug('Converting membuffer into np.ndarray')
+    coefarr = _array_wrap.to_ndarray(nk, np.NPY_DOUBLE, coef)
     szarr = _array_wrap.to_ndarray(n, np.NPY_DOUBLE, sz)
 
-    return szarr
+    return knots, coefarr, szarr, xs_min, xs_range
 
-    return szarr
+
+cpdef np.ndarray _bvalues(np.ndarray[np.double_t, ndim=1] knots,
+               np.ndarray[np.double_t, ndim=1] coef,
+               np.ndarray[np.double_t, ndim=1] xs,
+               double fit_xs_min,
+               double fit_xs_range,
+               int derivative):
+    """ Calculate spline fit for some x
+    """
+    cdef int n, nk
+    xs = (xs - fit_xs_min) / fit_xs_range
+
+    n = xs.shape[0]
+    nk = knots.shape[0]
+
+    logger.debug('Allocating memory...')
+    cdef double *yhat = <double*> malloc(sizeof(double) * n)
+
+    # We have to do it in loop over native code since `c_bvalue` evaluates for
+    # one `x`
+    for i in range(n):
+        yhat[i] = c_bvalue(
+            <double*> knots.data,
+            <double*> coef.data,
+            nk, 4, xs[i], derivative
+        )
+
+    yhatarr = _array_wrap.to_ndarray(n, np.NPY_DOUBLE, yhat)
+
+    return yhatarr
