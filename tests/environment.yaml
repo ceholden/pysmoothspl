@@ -6,3 +6,7 @@ dependencies:
     - cython
     # Compatibilty
     - pathlib  # [py2]
+    # Tests
+    - pytest
+    - pandas
+    - rpy2
