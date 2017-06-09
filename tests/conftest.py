@@ -39,7 +39,7 @@ def evi_timeseries_1():
         df_ans.to_csv(csv, index=False)
         return df_ans
     else:
-        return df
+        return pd.read_csv(csv)
 
 
 @pytest.fixture(scope='module')
