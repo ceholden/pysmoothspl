@@ -4,5 +4,3 @@ channels:
 dependencies:
     - numpy
     - cython
-    # Compatibilty
-    - pathlib  # [py2]

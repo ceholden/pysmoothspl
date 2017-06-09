@@ -1,4 +1,5 @@
-from pathlib import Path
+import fnmatch
+import os
 import sys
 
 try:
@@ -63,9 +64,9 @@ def get_cmdclass():
 
 
 # Include src/
-srcdir = Path('src/')
+srcdir = 'src'
 
-include_dirs = [str(srcdir)]
+include_dirs = [srcdir]
 # Need NumPy headers
 try:
     import numpy as np
@@ -75,9 +76,10 @@ except ImportError:
     sys.exit(1)
 
 # Define sbart.c as a library so we can compile it before our wrapper
-sources = list(map(str, srcdir.glob('*.c')))
+sources = [os.path.join(srcdir, f) for f in
+           fnmatch.filter(os.listdir(srcdir), '*.c')]
 libsbart = ('sbart', {'sources': sources,
-                      'include_dirs': [str(srcdir)],
+                      'include_dirs': [srcdir],
                       'libraries': ['m']})
 
 
