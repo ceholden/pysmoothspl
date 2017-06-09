@@ -58,6 +58,7 @@ cdef _nknots(int n):
     """
     if n < 500:
         return n
+    cdef double a, a1, a2, a3, a4
     a1 = np.log2(50)
     a2 = np.log2(100)
     a3 = np.log2(140)
