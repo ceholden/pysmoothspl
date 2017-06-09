@@ -4,6 +4,7 @@ import logging
 
 from libc.stdlib cimport malloc, free
 
+cimport cython
 import numpy as np
 cimport numpy as np
 
@@ -52,7 +53,7 @@ cdef extern from "sbart.h":
     )
 
 
-cdef _nknots(n):
+cdef _nknots(int n):
     """ Calculate a "good" amount of knots
     """
     if n < 500:
@@ -73,6 +74,8 @@ cdef _nknots(n):
     return int(a)
 
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 cpdef _sbart(np.ndarray[np.double_t, ndim=1] xs,
              np.ndarray[np.double_t, ndim=1] ys,
              np.ndarray[np.double_t, ndim=1] ws,
@@ -101,7 +104,7 @@ cpdef _sbart(np.ndarray[np.double_t, ndim=1] xs,
 
     # 2. Scale xs to [0, 1]
     xs_min = xs[0]
-    xs_range = (xs[-1] - xs[0])
+    xs_range = (xs[n] - xs[0])
     xs = (xs - xs[0]) / xs_range
 
     # 3. Calculate knots
@@ -172,12 +175,14 @@ cpdef _sbart(np.ndarray[np.double_t, ndim=1] xs,
     return knots, coefarr, szarr, xs_min, xs_range
 
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 cpdef np.ndarray _bvalues(np.ndarray[np.double_t, ndim=1] knots,
-               np.ndarray[np.double_t, ndim=1] coef,
-               np.ndarray[np.double_t, ndim=1] xs,
-               double fit_xs_min,
-               double fit_xs_range,
-               int derivative):
+                          np.ndarray[np.double_t, ndim=1] coef,
+                          np.ndarray[np.double_t, ndim=1] xs,
+                          double fit_xs_min,
+                          double fit_xs_range,
+                          int derivative):
     """ Calculate spline fit for some x
     """
     cdef int n, nk
