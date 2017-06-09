@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from pysmoothspl import sbart
+from pysmoothspl._sbart import _bvalues, _sbart
 
 
 @pytest.mark.parametrize('df', ('evi_timeseries_1',
@@ -15,12 +15,23 @@ def test_success_timeseries(df, request):
         yhat_ans = df[cname]
         spar = float(cname.split('_')[1])
 
-        knots, coef, yhat, x_min, x_range = sbart(
+        knots, coef, yhat, x_min, x_range = _sbart(
             df['x'].values,
             df['y'].values,
             df['w'].values,
             spar
         )
 
+        assert np.isfinite(yhat).all()
+        assert np.allclose(yhat, yhat_ans)
+
+        yhat = _bvalues(
+            knots,
+            coef,
+            df['x'].values,
+            x_min,
+            x_range,
+            0
+        )
         assert np.isfinite(yhat).all()
         assert np.allclose(yhat, yhat_ans)
