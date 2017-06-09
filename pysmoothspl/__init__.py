@@ -1,11 +1,12 @@
 """ Smoothing Spline
 """
-from ._sbart import _sbart as sbart  # TODO: friendlier wrapper
-
-__version__ = '0.0.1'
-
+# TODO: friendlier wrappers
+from ._sbart import _sbart as sbart, _bvalues as bvalues
+from .core import SmoothSpline
 
 __all__ = [
+    'SmoothSpline',
+    'bvalues',
     'sbart'
 ]
 
