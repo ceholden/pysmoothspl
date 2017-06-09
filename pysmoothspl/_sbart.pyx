@@ -76,21 +76,22 @@ cdef _nknots(int n):
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef _sbart(np.ndarray[np.double_t, ndim=1] xs,
-             np.ndarray[np.double_t, ndim=1] ys,
-             np.ndarray[np.double_t, ndim=1] ws,
+cpdef _sbart(double[:] xs,
+             double[:] ys,
+             double[:] ws,
              double spar):
     """ Compute a smoothing spline using `sbart` (R's `smooth.spline`)
     """
     assert ys.shape[0] == ws.shape[0] == xs.shape[0]
 
+    cdef int i, n, nk
     # Defaults in `contr.sp` or from `smooth.spline`
     cdef double lspar = -1.5
     cdef double uspar = 1.5
     cdef int ld4 = 4
     cdef int ldnk = 1
     cdef int isetup = 0
-    cdef int ier, n, nk
+    cdef int ier
     cdef double xs_range, xs_min
 
     # TODO: cross-validation type
@@ -99,22 +100,39 @@ cpdef _sbart(np.ndarray[np.double_t, ndim=1] xs,
 
     n = xs.shape[0]
     # Prepare inputs
+    cdef double *ws_norm = <double*> malloc(sizeof(double) * n)
+    cdef double *xs_scale = <double*> malloc(sizeof(double) * n)
     # 1. Normalize weights
-    ws = (ws * (ws > 0).sum()) / ws.sum()
+    # ws = (ws * (ws > 0).sum()) / ws.sum()
+    cdef double ws_sum
+    cdef double ws_gt_0_sum = 0
+    cdef double *ws_scale = <double*> malloc(sizeof(double) * n)
+
+    ws_sum = _c_array_sum(ws)
+    for i in range(n):
+        if ws[i] > 0.0:
+            ws_gt_0_sum += 1
+
+    for i in range(n):
+        ws_norm[i] = ws[i] * ws_gt_0_sum / ws_sum
 
     # 2. Scale xs to [0, 1]
     xs_min = xs[0]
     xs_range = (xs[n] - xs[0])
-    xs = (xs - xs[0]) / xs_range
+    for i in range(n):
+        xs_scale[i] = (xs[i] - xs[0]) / xs_range
 
     # 3. Calculate knots
     nk = _nknots(n)
-    cdef np.ndarray[np.double_t, ndim=1] knots = np.concatenate((
-        np.repeat(xs[0], 3),
-        xs[np.linspace(0, n - 1, nk, dtype=np.int)],
-        np.repeat(xs[n - 1], 3)
-    ))
-    nk += 2
+    cdef double *knots = <double*> malloc(sizeof(double) * (nk + 6))
+    for i in range(3):
+        knots[i] = xs[0]
+    for i in range(nk):
+        knots[i + 3] = xs[(int)( i * (n - 1) / (nk - 1))]
+    knots[nk + 2] = xs[n - 1]
+    for i in range(3):
+        knots[i + nk + 3] = xs[n - 1]
+    nk = nk + 2
 
     logger.debug('Calculated {nk} knots for {n} observations'.
                  format(nk=nk, n=n))
@@ -138,11 +156,11 @@ cpdef _sbart(np.ndarray[np.double_t, ndim=1] xs,
     logger.debug('Allocated memory...')
 
     try:
-        ier = sbart(<double*> xs.data,
-                    <double*> ys.data,
-                    <double*> ws.data,
+        ier = sbart(xs_scale,
+                    &ys[0],
+                    ws_norm,
                     n,
-                    <double*> knots.data, nk,
+                    knots, nk,
                     coef, sz,
                     spar, ispar, &lspar, &isetup,
                     xwy,
@@ -169,10 +187,11 @@ cpdef _sbart(np.ndarray[np.double_t, ndim=1] xs,
         free(p2ip)
 
     logger.debug('Converting membuffer into np.ndarray')
-    coefarr = _array_wrap.to_ndarray(nk, np.NPY_DOUBLE, coef)
-    szarr = _array_wrap.to_ndarray(n, np.NPY_DOUBLE, sz)
+    cdef np.ndarray[double, ndim=1] coefarr = _array_wrap.to_ndarray(nk, np.NPY_DOUBLE, coef)
+    cdef np.ndarray[double, ndim=1] szarr = _array_wrap.to_ndarray(n, np.NPY_DOUBLE, sz)
+    cdef np.ndarray[double, ndim=1] knotsarr = _array_wrap.to_ndarray(nk + 4, np.NPY_DOUBLE, knots)
 
-    return knots, coefarr, szarr, xs_min, xs_range
+    return knotsarr, coefarr, szarr, xs_min, xs_range
 
 
 @cython.boundscheck(False)
@@ -206,3 +225,15 @@ cpdef np.ndarray _bvalues(np.ndarray[np.double_t, ndim=1] knots,
     yhatarr = _array_wrap.to_ndarray(n, np.NPY_DOUBLE, yhat)
 
     return yhatarr
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef _c_array_sum(double[:] x):
+    cdef int n = x.shape[0]
+    cdef int i
+    cdef double _sum = 0
+
+    for i in range(n):
+        _sum = _sum + x[i]
+    return _sum
