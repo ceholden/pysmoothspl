@@ -200,7 +200,7 @@ cpdef np.ndarray _bvalues(np.ndarray[np.double_t, ndim=1] knots,
         yhat[i] = c_bvalue(
             <double*> knots.data,
             <double*> coef.data,
-            nk, 4, xs[i], derivative
+            nk - 4, 4, xs[i], derivative
         )
 
     yhatarr = _array_wrap.to_ndarray(n, np.NPY_DOUBLE, yhat)
