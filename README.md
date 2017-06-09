@@ -26,10 +26,35 @@ fig.show()
 ```
 ![Example](./docs/media/example_splines.png)
 
+## Install
+
+You will need `Cython` (unless/until this repo includes the `*.c` files) and
+`numpy`.
+
+### Anaconda
+
+There are two Conda `environment.yaml` files to help guide the installation:
+
+1. `environment.yaml` contains just the needed packages for installation
+2. `tests/environment.yaml` contains the packages needed to install and test
+   this package
+
+## Tests
+
+This package uses `py.test` to run tests, and you will also need `pandas`:
+
+``` bash
+py.test tests/
+```
+
+If `rpy2` is installed, the tests will actually calculate the expected values
+of calculations using the copy of R it is installed against. For users without
+`rpy2`, the test data also contains "cached" answers calculated using R code.
 
 ## TODO
 
 * [x] Object oriented sklearn-esque estimator
+* [ ] For function inputs: typed memory views > NumPy buffers
 * [ ] Kill the GIL
 * [ ] CI service tests
     * [ ] Code coverage checks with CI
