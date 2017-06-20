@@ -5,15 +5,15 @@ try:
     import sklearn
 except ImportError:
     HAS_SKLEARN = False
-    Base = (object, )
+    Base = object
 else:
     HAS_SKLEARN = True
-    Base = (sklearn.base.BaseEstimator, sklearn.base.RegressorMixin, )
-
+    BASES = (sklearn.base.BaseEstimator, sklearn.base.RegressorMixin, )
+    Base = type('Base', BASES, {})
 from ._sbart import _sbart, _bvalues
 
 
-class SmoothSpline(*Base):
+class SmoothSpline(Base):
     """ An smoothing spline estimator that acts like `scikit-learn`
 
     This smoothing spline estimator wraps the C-code that underlies
