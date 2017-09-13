@@ -143,8 +143,6 @@ cpdef _sbart(np.ndarray[np.double_t, ndim=1] xs,
     cdef double *sg2 = <double*> malloc(sizeof(double) * nk)
     cdef double *sg3 = <double*> malloc(sizeof(double) * nk)
     cdef double *abd = <double*> malloc(sizeof(double) * ld4 * nk)
-    cdef double *p1ip = <double*> malloc(sizeof(double) * ld4 * nk)
-    cdef double *p2ip = <double*> malloc(sizeof(double) * ldnk * nk)
     logger.debug('Allocated memory...')
 
     try:
@@ -175,8 +173,6 @@ cpdef _sbart(np.ndarray[np.double_t, ndim=1] xs,
         free(sg2)
         free(sg3)
         free(abd)
-        free(p1ip)
-        free(p2ip)
 
     logger.debug('Converting membuffer into np.ndarray')
     coefarr = _array_wrap.to_ndarray(nk, np.NPY_DOUBLE, coef)
