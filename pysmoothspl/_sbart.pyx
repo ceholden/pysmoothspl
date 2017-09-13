@@ -80,7 +80,8 @@ cdef _nknots(int n):
 cpdef _sbart(np.ndarray[np.double_t, ndim=1] xs,
              np.ndarray[np.double_t, ndim=1] ys,
              np.ndarray[np.double_t, ndim=1] ws,
-             double spar):
+             double spar,
+             bint check=True):
     """ Compute a smoothing spline using `sbart` (R's `smooth.spline`)
     """
     assert ys.shape[0] == ws.shape[0] == xs.shape[0]
@@ -103,12 +104,20 @@ cpdef _sbart(np.ndarray[np.double_t, ndim=1] xs,
     # 1. Normalize weights
     ws = (ws * (ws > 0).sum()) / ws.sum()
 
-    # 2. Scale xs to [0, 1]
+    # 2. Check unique and sorted
+    if check:
+        logger.debug('Checking for unique and sorted values of x')
+        xs, idx = np.unique(xs, return_index=True)
+        n = xs.shape[0]
+        ys = ys[idx]
+        ws = ws[idx]
+
+    # 4. Scale xs to [0, 1]
     xs_min = xs[0]
     xs_range = (xs[n - 1] - xs[0])
     xs = (xs - xs[0]) / xs_range
 
-    # 3. Calculate knots
+    # 5. Calculate knots
     nk = _nknots(n)
     cdef np.ndarray[np.double_t, ndim=1] knots = np.concatenate((
         np.repeat(xs[0], 3),
@@ -120,7 +129,7 @@ cpdef _sbart(np.ndarray[np.double_t, ndim=1] xs,
     logger.debug('Calculated {nk} knots for {n} observations'.
                  format(nk=nk, n=n))
 
-    # 3. Allocate
+    # 5. Allocate
     logger.debug('Allocating work and output arrays')
     cdef double *sz = <double*> malloc(sizeof(double) * n)
     cdef double *coef = <double*> malloc(sizeof(double) * nk)

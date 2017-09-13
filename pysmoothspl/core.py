@@ -37,7 +37,7 @@ class SmoothSpline(Base):
             'Smoothing control parameter `spar` needs to be a '
             'float (usually (0, 1])')
 
-    def fit(self, X, y, sample_weight=None):
+    def fit(self, X, y, sample_weight=None, check=True):
         """ Fit a smoothing spline
         """
         # TODO: let y=None and just use X against index
@@ -55,7 +55,7 @@ class SmoothSpline(Base):
         assert X.shape[0] == y.shape[0] == sample_weight.shape[0]
 
         result = _sbart(
-            X, y, sample_weight, self.spar
+            X, y, sample_weight, self.spar, check=check
         )
         self.knots_ = result[0]
         self.coefs_ = result[1]
