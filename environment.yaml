@@ -2,5 +2,9 @@ name: pysmoothspl
 channels:
     - conda-forge
 dependencies:
+    - python
     - numpy
     - cython
+    # For tests
+    - pytest
+    - pandas
