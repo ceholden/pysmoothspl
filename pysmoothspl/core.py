@@ -31,11 +31,12 @@ class SmoothSpline(Base):
         spar (float): Smoothing spline parameter, usually in (0, 1]
 
     """
-    def __init__(self, spar):
+    def __init__(self, spar, mask=True):
         self.spar = spar
         assert isinstance(self.spar, float), (
             'Smoothing control parameter `spar` needs to be a '
             'float (usually (0, 1])')
+        self.mask = mask
 
     def fit(self, X, y, sample_weight=None, check=True):
         """ Fit a smoothing spline
@@ -45,6 +46,11 @@ class SmoothSpline(Base):
 
         X = np.asarray(X, dtype=np.float)
         y = np.asarray(y, dtype=np.float)
+
+        if self.mask:
+            m = np.isfinite(X) & np.isfinite(y)
+            X = X[m]
+            y = y[m]
 
         if sample_weight is None:
             # Default to same weights
